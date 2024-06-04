@@ -21,7 +21,7 @@ fn rec_d_i_j(l: &Array1<f64>, w: &Array1<f64>, t: &Array2<f64>, peoples: i32, n 
 }
 
 pub fn sinkhorn(l: &Array1<f64>, w: &Array1<f64>, t: &Array2<f64>, max_iter: i32, eps: f64, peoples: i32) -> (Array2<f64>, Array1<f64>, Array1<f64>) {
-    assert_eq!(l, w);
+    assert_eq!(l.len(), w.len());
     let n = l.len();
     let mut lambda_w = Array1::<f64>::zeros(n);
     let mut lambda_l = Array1::<f64>::zeros(n);
@@ -51,16 +51,67 @@ mod test_sinkhorn {
     #[test]
     fn test() {
         let max_iter = 25000;
-        let eps = 1e-8; // критерий сходимости
+        let eps = 1e-8;
     
-        let productions_vector = array![1.0, 2.0, 3.0];
-        let attractions_vector = array![1.0, 2.0, 3.0];
-        let cost_matrix = array![[0.1, 0.2, 0.3],
-                                 [0.4, 0.5, 0.6],
-                                 [0.7, 0.8, 0.9]];
+        let mut productions_vector = array![100., 200.];
+        let mut attractions_vector = array![150., 150.];
 
-        sinkhorn(&productions_vector, &attractions_vector, &cost_matrix, max_iter, eps, 100);
+        let peoples_num = productions_vector.sum();
+
+        productions_vector /= peoples_num;
+        attractions_vector /= peoples_num;
+
+        let cost_matrix = array![
+            [1., 2.],
+            [2., 1.]];
+
+        let (correspondence, _, _) = sinkhorn(&productions_vector, &attractions_vector, &cost_matrix, max_iter, eps, peoples_num as i32);
+
+        print!("{:?}", correspondence);
 
         assert!(true);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_panic_on_productions_and_attractions_mismatched_lengths() {
+        let max_iter = 25000;
+        let eps = 1e-8;
+    
+        let mut productions_vector = array![100., 200., 100.];
+        let mut attractions_vector = array![150., 150.];
+
+        let peoples_num = productions_vector.sum();
+
+        productions_vector /= peoples_num;
+        attractions_vector /= peoples_num; 
+
+        let cost_matrix = array![
+            [1., 2.],
+            [2., 1.]];
+
+        sinkhorn(&productions_vector, &attractions_vector, &cost_matrix, max_iter, eps, peoples_num as i32);
+    }
+
+    #[test]
+    fn test_peoples_num_equal_to_correspondence_sum() {
+        let max_iter = 25000;
+        let eps = 1e-8;
+
+        let mut productions_vector = array![100., 200.];
+        let mut attractions_vector = array![150., 150.];
+
+        let peoples_num = productions_vector.sum();
+
+        productions_vector /= peoples_num;
+        attractions_vector /= peoples_num;
+
+        let cost_matrix = array![
+            [1., 2.],
+            [2., 1.]];
+
+        let (correspondence, _, _) = sinkhorn(&productions_vector, &attractions_vector, &cost_matrix, max_iter, eps, peoples_num as i32);
+        
+        assert_eq!(correspondence.sum(), peoples_num);
     }
 }
